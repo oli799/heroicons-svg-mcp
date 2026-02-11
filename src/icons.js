@@ -15,6 +15,12 @@ const STYLE_PRIORITY = Object.freeze({
   mini: 2,
   micro: 3,
 });
+const STYLE_TO_DEFAULT_CLASS = Object.freeze({
+  outline: "size-6",
+  solid: "size-6",
+  mini: "size-5",
+  micro: "size-4",
+});
 const iconNamesCache = new Map();
 const iconPathCache = new Map();
 const iconSvgCache = new Map();
@@ -183,10 +189,8 @@ function scoreMatch(iconName, query) {
     score += 120;
   } else if (rawName.startsWith(rawQuery)) {
     score += 100;
-  } else if (normalizedIncludes) {
+  } else if (normalizedIncludes || rawIncludes) {
     score += 80;
-  } else if (rawIncludes) {
-    score += 70;
   } else if (allTokensMatch) {
     score += 60;
   }
@@ -268,11 +272,50 @@ function formatSearchIconsText(result) {
   return lines.join("\n");
 }
 
+function normalizeWhitespace(value) {
+  return value.replace(/\r\n?/g, "\n").replace(/\s+/g, " ").trim();
+}
+
+function normalizeChildTagForCopy(tag) {
+  const normalized = normalizeWhitespace(tag);
+  return normalized.replace(/\s*\/>$/, " />");
+}
+
+function normalizeSvgForCopy(rawSvg, style) {
+  const defaultClass = STYLE_TO_DEFAULT_CLASS[style] || "size-6";
+  const svgMatch = rawSvg.match(/<svg\b([^>]*)>([\s\S]*?)<\/svg>/i);
+  if (!svgMatch) {
+    throw new Error("Invalid SVG source: missing <svg> root element.");
+  }
+
+  const svgAttrs = normalizeWhitespace(
+    svgMatch[1]
+      .replace(/\s+aria-hidden="[^"]*"/g, "")
+      .replace(/\s+data-slot="[^"]*"/g, "")
+  );
+
+  const attrsWithClass = /\bclass="/.test(svgAttrs)
+    ? svgAttrs
+    : `${svgAttrs} class="${defaultClass}"`;
+
+  const childTags = (svgMatch[2].match(/<[^>]+>/g) || []).map((tag) =>
+    normalizeChildTagForCopy(tag)
+  );
+
+  const openTag = `<svg ${attrsWithClass}>`;
+  if (childTags.length === 0) {
+    return `${openTag}\n</svg>`;
+  }
+
+  return `${openTag}\n${childTags.map((tag) => `  ${tag}`).join("\n")}\n</svg>`;
+}
+
 function retrieveIcon(name, style, heroiconsRoot = resolveHeroiconsRoot()) {
   const { iconPath, normalizedName } = resolveIconFilePath(name, style, heroiconsRoot);
   let svg = iconSvgCache.get(iconPath);
   if (svg === undefined) {
-    svg = fs.readFileSync(iconPath, "utf8");
+    const rawSvg = fs.readFileSync(iconPath, "utf8");
+    svg = normalizeSvgForCopy(rawSvg, style);
     iconSvgCache.set(iconPath, svg);
   }
 
