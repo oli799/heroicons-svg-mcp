@@ -162,6 +162,12 @@ Run tests:
 npm test
 ```
 
+Run tests with coverage:
+
+```bash
+npm run test:coverage
+```
+
 Watch mode:
 
 ```bash
@@ -170,9 +176,12 @@ npm run test:watch
 
 ## Project Structure
 
-- `index.js`: MCP server startup and tool registration.
+- `index.js`: CLI bootstrap entrypoint.
+- `src/server.js`: MCP server creation and tool registration.
 - `src/icons.js`: icon logic, search, retrieve, caching.
-- `src/icons.test.mjs`: unit tests.
+- `tests/icons.unit.test.mjs`: unit tests.
+- `tests/server.integration.test.mjs`: MCP server integration tests.
+- `tests/index.bootstrap.test.mjs`: CLI/bootstrap behavior tests.
 
 ## Error Handling
 
@@ -192,5 +201,5 @@ Examples:
 
 ## License
 
-- Project: ISC
+- Project: MIT
 - Heroicons: MIT

@@ -6,11 +6,14 @@ const require = createRequire(import.meta.url);
 const {
   clearIconCaches,
   SUPPORTED_STYLES,
+  formatListAllIconsText,
+  formatSearchIconsText,
   getIconNamesForStyle,
   listAllIcons,
+  resolveIconFilePath,
   retrieveIcon,
   searchIcons,
-} = require("./icons.js");
+} = require("../src/icons.js");
 
 beforeEach(() => {
   clearIconCaches();
@@ -80,6 +83,35 @@ describe("searchIcons", () => {
     expect(result.total).toBe(0);
     expect(result.icons).toEqual([]);
   });
+
+  it("returns empty result for empty query input", () => {
+    const result = searchIcons("   ");
+
+    expect(result.total).toBe(0);
+    expect(result.icons).toEqual([]);
+    expect(result.styles).toEqual(SUPPORTED_STYLES);
+  });
+
+  it("supports token-based matching even when full normalized query does not match", () => {
+    const result = searchIcons("acad cap", "outline");
+    const academicCap = result.icons.find((icon) => icon.name === "academic-cap");
+
+    expect(academicCap).toBeDefined();
+    expect(academicCap.score).toBeGreaterThanOrEqual(72);
+  });
+
+  it("scores normalized phrase matches and prefix matches", () => {
+    const normalized = searchIcons("academic cap", "outline");
+    const prefix = searchIcons("academ", "outline");
+
+    const normalizedMatch = normalized.icons.find((icon) => icon.name === "academic-cap");
+    const prefixMatch = prefix.icons.find((icon) => icon.name === "academic-cap");
+
+    expect(normalizedMatch).toBeDefined();
+    expect(normalizedMatch.score).toBeGreaterThanOrEqual(80);
+    expect(prefixMatch).toBeDefined();
+    expect(prefixMatch.score).toBeGreaterThanOrEqual(100);
+  });
 });
 
 describe("retrieveIcon", () => {
@@ -123,5 +155,52 @@ describe("caching", () => {
 
     expect(second.svg).toBe(first.svg);
     expect(readFileSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("caches icon file path resolution for the same normalized icon name", () => {
+    const existsSpy = vi.spyOn(fs, "existsSync");
+
+    const first = resolveIconFilePath("Academic Cap", "outline");
+    const second = resolveIconFilePath("academic-cap", "outline");
+
+    expect(second.iconPath).toBe(first.iconPath);
+    expect(existsSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("formatters", () => {
+  it("formats list_icons text output", () => {
+    const result = listAllIcons("outline");
+    const text = formatListAllIconsText(result);
+
+    expect(text).toContain("Found");
+    expect(text).toContain("outline (");
+  });
+
+  it("formats search_icons text output for empty and non-empty results", () => {
+    const emptyText = formatSearchIconsText({
+      icons: [],
+      query: "missing",
+      styles: ["outline"],
+      total: 0,
+    });
+    const nonEmpty = searchIcons("academic-cap", "outline");
+    const nonEmptyText = formatSearchIconsText(nonEmpty);
+
+    expect(emptyText).toBe('No icons found for "missing".');
+    expect(nonEmptyText).toContain('Found');
+    expect(nonEmptyText).toContain('outline: academic-cap');
+  });
+});
+
+describe("resolveIconFilePath", () => {
+  it("throws when style is missing", () => {
+    expect(() => resolveIconFilePath("academic-cap")).toThrow(/Style is required/);
+  });
+
+  it("throws for invalid icon names", () => {
+    expect(() => resolveIconFilePath("acad../cap", "outline")).toThrow(
+      /Invalid icon name/
+    );
   });
 });
