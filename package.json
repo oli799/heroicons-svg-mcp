@@ -4,7 +4,7 @@
   "description": "MCP server for listing, searching and retrieving Heroicons as SVG",
   "main": "index.js",
   "bin": {
-    "heroicons-svg-mcp": "./index.js"
+    "heroicons-svg-mcp": "index.js"
   },
   "files": [
     "index.js",
