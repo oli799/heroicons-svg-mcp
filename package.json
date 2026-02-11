@@ -1,6 +1,6 @@
 {
   "name": "heroicons-svg-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for listing, searching and retrieving Heroicons as SVG",
   "main": "index.js",
   "bin": {
