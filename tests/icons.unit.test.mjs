@@ -184,6 +184,18 @@ describe("retrieveIcon", () => {
     }
   });
 
+  it("does not inject line breaks inside path d attributes for long icons", () => {
+    const result = retrieveIcon("cog-6-tooth", "outline");
+    const dAttributes = [...result.svg.matchAll(/\sd="([^"]*)"/g)];
+
+    expect(dAttributes.length).toBeGreaterThan(0);
+
+    for (const [, dValue] of dAttributes) {
+      expect(dValue).not.toContain("\n");
+      expect(dValue).not.toContain("\r");
+    }
+  });
+
   it("throws a verbose error when source is not a valid svg root", () => {
     vi.spyOn(fs, "readFileSync").mockReturnValue("<g></g>");
 

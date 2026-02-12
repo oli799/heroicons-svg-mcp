@@ -20,6 +20,10 @@
     "prepublishOnly": "npm test",
     "test:coverage": "vitest run --coverage"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oli799/heroicons-svg-mcp.git"
+  },
   "keywords": [
     "mcp",
     "model-context-protocol",
